@@ -47,6 +47,7 @@ const api = {
             author: '익명',
             date: new Date().toISOString().slice(0, 10)
           };
+          if (!post.comments) post.comments = [];
           post.comments.push(newComment);
           resolve(newComment);
         } else {
