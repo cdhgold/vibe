@@ -1,45 +1,42 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { NewPost } from '../types';
+import api from '../api';
 
 const PostForm: React.FC = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [author, setAuthor] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newPost: NewPost = { title, content, author };
+    if (!title || !content || !author || !password) {
+      alert('모든 필드를 입력해주세요.');
+      return;
+    }
 
     try {
-      const response = await fetch('http://localhost:3001/api/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPost),
-      });
-      if (response.ok) {
-        navigate('/');
-      }
+      await api.createPost({ title, content, author, password });
+      navigate('/');
     } catch (error) {
       console.error('Error creating post:', error);
+      alert('게시글 작성 실패');
     }
   };
 
   return (
-    <div className="post-form">
+    <div className="container">
       <h2>게시글 작성</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <input type="text" placeholder="제목" value={title} onChange={e => setTitle(e.target.value)} required />
+      <form onSubmit={handleSubmit} className="post-form">
+        <div className="form-group"><label>제목</label><input type="text" value={title} onChange={e => setTitle(e.target.value)} required /></div>
+        <div className="form-group"><label>작성자</label><input type="text" value={author} onChange={e => setAuthor(e.target.value)} required /></div>
+        <div className="form-group"><label>비밀번호</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="삭제/수정 시 필요" /></div>
+        <div className="form-group"><label>내용</label><textarea value={content} onChange={e => setContent(e.target.value)} required rows={10} /></div>
+        <div className="btn-group">
+          <button type="submit" className="btn-primary">등록</button>
+          <button type="button" onClick={() => navigate('/')} className="btn-secondary">취소</button>
         </div>
-        <div>
-          <input type="text" placeholder="작성자" value={author} onChange={e => setAuthor(e.target.value)} required />
-        </div>
-        <div>
-          <textarea placeholder="내용" value={content} onChange={e => setContent(e.target.value)} required />
-        </div>
-        <button type="submit">등록</button>
       </form>
     </div>
   );
