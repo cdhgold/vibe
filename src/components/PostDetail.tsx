@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Post } from '../types';
+import type { Post } from '../types';
 
 const PostDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();

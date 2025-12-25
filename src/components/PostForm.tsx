@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { NewPost } from '../types';
+import type { NewPost } from '../types';
 
 const PostForm: React.FC = () => {
   const [title, setTitle] = useState('');
