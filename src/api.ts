@@ -1,6 +1,6 @@
 import type { Post, NewPost, Comment } from './types';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.PROD ? '/api' : 'http://localhost:3001/api';
 
 const api = {
   getPosts: async (): Promise<Post[]> => {
