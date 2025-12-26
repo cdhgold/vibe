@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import postsData from '../../data/posts.json';
+import api from '../api';
 
 interface Post {
   id: number;
@@ -9,9 +10,27 @@ interface Post {
 }
 
 const PostList = () => {
-  // 데이터를 직접 import하므로 로딩, 에러, 상태 관리가 필요 없습니다.
-  // `postsData`는 `Post[]` 타입의 배열로 직접 사용할 수 있습니다.
-  const posts: Post[] = postsData;
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const data = await api.getPosts();
+        setPosts(data);
+      } catch (err) {
+        setError('게시글을 불러오는 데 실패했습니다.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPosts();
+  }, []);
+
+  if (loading) return <div className="container">로딩 중...</div>;
+  if (error) return <div className="container" style={{ color: 'red' }}>{error}</div>;
 
   return (
     <div className="container">
