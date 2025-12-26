@@ -55,4 +55,4 @@ jobs:
               ${{ secrets.DOCKER_USERNAME }}/vibe-board:latest
 
             # 사용하지 않는 Docker 이미지를 정리하여 서버 용량을 확보합니다.
-            docker image prune -f
+            docker image prune -af
