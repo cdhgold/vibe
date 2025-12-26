@@ -11,7 +11,7 @@ export const App: React.FC = () => {
     <Router>
       <div className="App">
         <header className="app-header">
-          <h1>바이브코딩 리액트게시판</h1>
+          <h1>바이브코딩(1인개발사)</h1>
         </header>
         <main>
           <Routes>

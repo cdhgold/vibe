@@ -46,7 +46,7 @@ jobs:
             
             # README.md에 명시된 데이터 보존을 위한 볼륨 마운트를 적용하여 새 컨테이너를 실행합니다.
             # 호스트의 /root/data 디렉토리를 컨테이너의 /app/data와 연결합니다.
-            docker run -d -p 3000:3000 \
+            docker run -d -p 3001:3001 \
               -v /root/data:/app/data \
               --name vibe-app \
               ${{ secrets.DOCKER_USERNAME }}/vibe-board:latest
