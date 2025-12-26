@@ -6,4 +6,3 @@ Dockerfile
 docker-compose.yml
 logs
 *.log
-posts.json

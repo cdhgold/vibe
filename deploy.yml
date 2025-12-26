@@ -11,7 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Docker Hub
+      - name's Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -34,33 +34,31 @@ jobs:
           host: ${{ secrets.NAVER_CLOUD_HOST }}
           username: ${{ secrets.NAVER_CLOUD_USER }}
           key: ${{ secrets.NAVER_CLOUD_SSH_KEY }}
-          port: 22
-          # 아래 설정을 추가하여 키 형식을 더 유연하게 받아들이도록 합니다.
-          debug: true
           script: |
             # Docker Hub에서 최신 이미지를 pull합니다.
             docker pull ${{ secrets.DOCKER_USERNAME }}/vibe-board:latest
-
+            
             # 기존에 실행 중인 컨테이너가 있다면 중지하고 삭제합니다.
             if [ "$(docker ps -q -f name=vibe-app)" ]; then
                 docker stop vibe-app
                 docker rm vibe-app
             fi
-
+            
             # 호스트에 데이터 디렉토리가 없으면 생성합니다.
-            if [ ! -d "/root/data" ]; then
-              mkdir -p /root/data
+            if [ ! -d "/root/vibe/data" ]; then
+              mkdir -p /root/vibe/data
             fi
 
             # 호스트에 posts.json 파일이 없으면, 이미지에서 기본 파일을 복사하여 초기화합니다.
-            if [ ! -f "/root/data/posts.json" ]; then
+            if [ ! -f "/root/vibe/data/posts.json" ]; then
               echo "posts.json not found on host. Copying default from image."
-              docker run --rm --entrypoint cat ${{ secrets.DOCKER_USERNAME }}/vibe-board:latest /app/data/posts.json > /root/data/posts.json
+              docker run --rm --entrypoint cat ${{ secrets.DOCKER_USERNAME }}/vibe-board:latest /app/data/posts.json > /root/vibe/data/posts.json
             fi
 
             # README.md에 명시된 데이터 보존을 위한 볼륨 마운트를 적용하여 새 컨테이너를 실행합니다.
+            # 호스트의 /root/data 디렉토리를 컨테이너의 /app/data와 연결합니다.
             docker run -d -p 3001:3001 \
-              -v /root/data:/app/data \
+              -v /root/vibe/data:/app/data \
               --name vibe-app \
               ${{ secrets.DOCKER_USERNAME }}/vibe-board:latest
 
