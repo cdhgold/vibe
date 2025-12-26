@@ -1,62 +1,61 @@
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
-
 const app = express();
 const PORT = 3001;
+const DATA_DIR = path.join(__dirname, '../data');
+const DATA_FILE = path.join(DATA_DIR, 'posts.json');
 
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI;
+// 데이터 디렉토리 및 파일 자동 생성
+const initData = async () => {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.access(DATA_FILE);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      await fs.writeFile(DATA_FILE, JSON.stringify([]));
+      console.log(`Created data file: ${DATA_FILE}`);
+    } else {
+      console.error('Failed to initialize data:', error);
+    }
+  }
+};
 
-if (!MONGODB_URI) {
-  console.error('Error: MONGODB_URI is not defined in .env file.');
-  process.exit(1);
-}
+initData();
 
-// 접속 시도 로그 출력 (비밀번호 마스킹)
-console.log(`Connecting to MongoDB: ${MONGODB_URI.replace(/:([^:@]+)@/, ':****@')}`);
+// 파일 읽기/쓰기 헬퍼 함수
+const readPosts = async () => {
+  const data = await fs.readFile(DATA_FILE, 'utf8');
+  return JSON.parse(data);
+};
 
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
-
-// Schemas
-const commentSchema = new mongoose.Schema({
-  id: Number,
-  content: String,
-  author: String,
-  date: String
-});
-
-const postSchema = new mongoose.Schema({
-  id: { type: Number, unique: true, required: true },
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  author: { type: String, required: true },
-  password: { type: String, required: true, select: false },
-  date: { type: String, required: true },
-  comments: [commentSchema]
-});
-
-const Post = mongoose.model('Post', postSchema);
+const writePosts = async (posts) => {
+  await fs.writeFile(DATA_FILE, JSON.stringify(posts, null, 2));
+};
 
 // 전체 게시글 조회
 app.get('/api/posts', async (req, res) => {
   try {
-    const posts = await Post.find().select('-password -content -comments').sort({ id: -1 });
-    res.json(posts);
+    const posts = await readPosts();
+    const postList = posts.map(({ id, title, author, date, comments }) => ({
+      id,
+      title,
+      author,
+      date,
+      comments: comments || [],
+    })).sort((a, b) => b.id - a.id);
+    res.json(postList);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to read posts' });
   }
 });
@@ -64,10 +63,12 @@ app.get('/api/posts', async (req, res) => {
 // 게시글 상세 조회
 app.get('/api/posts/:id', async (req, res) => {
   try {
-    const post = await Post.findOne({ id: parseInt(req.params.id) });
+    const posts = await readPosts();
+    const post = posts.find(p => p.id === parseInt(req.params.id));
     if (!post) return res.status(404).json({ error: 'Post not found' });
     res.json(post);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to read post' });
   }
 });
@@ -75,24 +76,19 @@ app.get('/api/posts/:id', async (req, res) => {
 // 게시글 작성
 app.post('/api/posts', async (req, res) => {
   try {
-    const lastPost = await Post.findOne().sort({ id: -1 });
-    const newId = lastPost ? lastPost.id + 1 : 1;
-    
-    const newPost = new Post({
+    const posts = await readPosts();
+    const newId = posts.length > 0 ? Math.max(...posts.map(p => p.id)) + 1 : 1;
+
+    const newPost = {
       id: newId,
       ...req.body,
       date: new Date().toISOString().split('T')[0],
       comments: []
-    });
+    };
 
-    await newPost.save();
-    
-    const responsePost = newPost.toObject();
-    delete responsePost.password;
-    delete responsePost._id;
-    delete responsePost.__v;
-
-    res.status(201).json(responsePost);
+    posts.unshift(newPost);
+    await writePosts(posts);
+    res.status(201).json(newPost);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create post' });
@@ -104,24 +100,18 @@ app.put('/api/posts/:id', async (req, res) => {
   try {
     const { password, title, content, author } = req.body;
     const id = parseInt(req.params.id);
+    const posts = await readPosts();
+    const postIndex = posts.findIndex(p => p.id === id);
 
-    const post = await Post.findOne({ id }).select('+password');
-    if (!post) return res.status(404).json({ error: 'Post not found' });
+    if (postIndex === -1) return res.status(404).json({ error: 'Post not found' });
 
-    if (post.password !== password) {
+    if (posts[postIndex].password !== password) {
       return res.status(403).json({ error: 'Incorrect password' });
     }
 
-    post.title = title;
-    post.content = content;
-    post.author = author;
-    
-    await post.save();
-
-    const responsePost = post.toObject();
-    delete responsePost.password;
-
-    res.json(responsePost);
+    posts[postIndex] = { ...posts[postIndex], title, content, author };
+    await writePosts(posts);
+    res.json(posts[postIndex]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update post' });
@@ -131,8 +121,10 @@ app.put('/api/posts/:id', async (req, res) => {
 // 댓글 작성
 app.post('/api/posts/:id/comments', async (req, res) => {
   try {
-    const post = await Post.findOne({ id: parseInt(req.params.id) });
-    if (!post) return res.status(404).json({ error: 'Post not found' });
+    const posts = await readPosts();
+    const postIndex = posts.findIndex(p => p.id === parseInt(req.params.id));
+
+    if (postIndex === -1) return res.status(404).json({ error: 'Post not found' });
 
     const newComment = {
       id: Date.now(),
@@ -141,11 +133,15 @@ app.post('/api/posts/:id/comments', async (req, res) => {
       date: new Date().toISOString().split('T')[0]
     };
     
-    post.comments.push(newComment);
-    await post.save();
+    if (!posts[postIndex].comments) {
+      posts[postIndex].comments = [];
+    }
+    posts[postIndex].comments.push(newComment);
+    await writePosts(posts);
     
     res.status(201).json(newComment);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Failed to add comment' });
   }
 });
@@ -155,16 +151,17 @@ app.delete('/api/posts/:id', async (req, res) => {
   try {
     const { password } = req.body;
     const id = parseInt(req.params.id);
+    let posts = await readPosts();
+    const postToDelete = posts.find(p => p.id === id);
 
-    const post = await Post.findOne({ id }).select('+password');
-    if (!post) return res.status(404).json({ error: 'Post not found' });
+    if (!postToDelete) return res.status(404).json({ error: 'Post not found' });
 
-    if (post.password !== password) {
+    if (postToDelete.password !== password) {
       return res.status(403).json({ error: 'Incorrect password' });
     }
 
-    await Post.deleteOne({ id });
-
+    const updatedPosts = posts.filter(p => p.id !== id);
+    await writePosts(updatedPosts);
     res.status(204).send();
   } catch (err) {
     console.error(err);
@@ -178,7 +175,9 @@ app.post('/api/posts/:id/verify', async (req, res) => {
     const { password } = req.body;
     const id = parseInt(req.params.id);
 
-    const post = await Post.findOne({ id }).select('+password');
+    const posts = await readPosts();
+    const post = posts.find(p => p.id === id);
+
     if (!post) return res.status(404).json({ error: 'Post not found' });
 
     if (post.password !== password) {
@@ -187,6 +186,7 @@ app.post('/api/posts/:id/verify', async (req, res) => {
 
     res.json({ valid: true });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Verification failed' });
   }
 });
