@@ -1,7 +1,6 @@
-import React from 'react';
 import './ImaginationWorld.css';
 
-const ImaginationWorld: React.FC = () => {
+const ImaginationWorld = () => {
   return (
     <div className="spline-container">
       <iframe

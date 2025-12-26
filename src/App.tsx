@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PostList from './components/PostList';
 import PostForm from './components/PostForm';
@@ -7,7 +7,7 @@ import PostEdit from './components/PostEdit';
 import ImaginationWorld from './components/ImaginationWorld';
 import './App.css';
 
-export const App: React.FC = () => {
+export const App = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const closeMenu = () => setIsMenuOpen(false);
