@@ -34,6 +34,9 @@ jobs:
           host: ${{ secrets.NAVER_CLOUD_HOST }}
           username: ${{ secrets.NAVER_CLOUD_USER }}
           key: ${{ secrets.NAVER_CLOUD_SSH_KEY }}
+          port: 22
+          # 아래 설정을 추가하여 키 형식을 더 유연하게 받아들이도록 합니다.
+          debug: true
           script: |
             # Docker Hub에서 최신 이미지를 pull합니다.
             docker pull ${{ secrets.DOCKER_USERNAME }}/vibe-board:latest
