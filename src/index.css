@@ -1,1 +1,7 @@
-/* 기본 스타일 초기화 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-50;
+}
