@@ -1,30 +1,39 @@
-1. 디자인 컨셉: "Clean & Professional"
-컬러 팔레트:
+PWA추가
+1. Manifest 파일 생성 (manifest.json)
+앱의 이름, 아이콘, 배경색 등을 정의하는 명함 같은 파일입니다. public 폴더나 dist 루트에 만듭니다.
+{
+  "name": "바이브 보드",
+  "short_name": "VibeBoard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "/vc-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/vc-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
+2. Service Worker 등록 (sw.js)
+self.addEventListener('install', (e) => {
+  console.log('PWA 서비스 워커 설치 완료!');
+});
 
-배경: 아주 연한 회색(F9FAFB) 또는 순백색(FFFFFF)
-
-포인트 컬러: 신뢰감을 주는 Deep Blue(1E3A8A) 또는 세련된 Slate(334155)
-
-강조(Accent): 중요한 버튼에만 살짝 Indigo(4F46E5) 사용
-
-여백(Spacing): 요소 사이의 간격을 넓게 주어 답답함을 없애고 가독성을 높입니다.
-
-둥근 모서리(Border Radius): 너무 각진 스타일보다 8px~12px 정도의 부드러운 곡선을 사용합니다.
-
-2. 구체적인 UI 수정 제안
-① 헤더(Header) 및 레이아웃
-상단에 고정된(sticky) 투명한 배경의 헤더를 만듭니다.
-
-Vibe Board 로고는 굵은 폰트(Bold)를 사용하고 간결하게 배치합니다.
-
-② 게시글 카드 스타일 (핵심)
-표(Table) 형태보다는 카드(Card) 형태를 추천합니다.
-
-카드에 얇은 테두리(border: 1px solid #E5E7EB)와 아주 연한 그림자(box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1))를 넣으세요.
-
-마우스를 올렸을 때 살짝 위로 올라가는 애니메이션(transition: transform 0.2s)을 넣으면 훨씬 생동감이 생깁니다.
-
-③ 폰트(Typography)
-시스템 폰트 대신 Pretendard 또는 Noto Sans KR 같은 깔끔한 고딕체 계열을 사용하세요.
-
-제목은 크게(24px~30px), 본문은 적당하게(16px), 날짜나 작성자 정보는 작고 흐리게(14px, #6B7280) 설정하여 정보의 위계를 잡습니다.
+self.addEventListener('fetch', (e) => {
+  // 네트워크 요청을 가로채서 처리하는 로직 (일단 비워둬도 작동합니다)
+});
+index.html의 <head> 태그 안에 아래 코드를 넣습니다.
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#4F46E5">
+<script>
+  if ('service worker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
